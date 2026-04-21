@@ -1470,80 +1470,81 @@
     }
 
     form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  clearErrors();
-  
-  let isValid = true;
+      e.preventDefault();
+      clearErrors();
+      
+      let isValid = true;
 
-  // 1. Валидация имени
-  const name = form.name.value.trim();
-  const namePattern = /^[\sа-яА-ЯёЁa-zA-Z\-']{2,50}$/;
-  if (!name || !namePattern.test(name)) {
-    showError('name');
-    isValid = false;
-  }
+      // 1. Валидация имени
+      const name = form.name.value.trim();
+      const namePattern = /^[\sа-яА-ЯёЁa-zA-Z\-']{2,50}$/;
+      if (!name || !namePattern.test(name)) {
+        showError('name');
+        isValid = false;
+      }
 
-  // 2. Валидация присутствия
-  const attendance = form.attendance.value;
-  if (!attendance) {
-    const attendanceGroup = document.querySelector('input[name="attendance"]').closest('.form-group');
-    if (attendanceGroup) attendanceGroup.classList.add('error');
-    isValid = false;
-  }
+      // 2. Валидация присутствия
+      const attendance = form.attendance.value;
+      if (!attendance) {
+        const attendanceGroup = document.querySelector('input[name="attendance"]').closest('.form-group');
+        if (attendanceGroup) attendanceGroup.classList.add('error');
+        isValid = false;
+      }
 
-  // Если есть ошибки — показываем и выходим
-  if (!isValid) {
-    const firstError = document.querySelector('.form-group.error');
-    if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    return;
-  }
+      // 3. Если не валидно — выходим
+      if (!isValid) {
+        const firstError = document.querySelector('.form-group.error');
+        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
 
-  // ✅ Всё валидно — показываем загрузку
-  loading.style.display = "block";
-  success.style.display = "none";
-  errorMsg.style.display = "none";
+      // ✅ Всё валидно — показываем загрузку
+      loading.style.display = "block";
+      success.style.display = "none";
+      errorMsg.style.display = "none";
 
-  // Собираем данные формы
-  const formData = new FormData();
-  formData.append('name', form.name.value.trim());
-  formData.append('attendance', form.attendance.value);
-  formData.append('guests', form.guests.value || "1");
-  formData.append('allergies', form.allergies.value.trim() || "Нет");
-  
-  // 🍷 Собираем выбранные напитки
-  document.querySelectorAll('input[name="drinks"]:checked').forEach(cb => {
-    formData.append('drinks[]', cb.value);
-  });
+      // Собираем данные
+      const guests = form.guests.value || "1";
+      const allergies = form.allergies.value.trim() || "Нет";
+      
+      // 🍷 Собираем выбранные напитки
+      const drinks = Array.from(document.querySelectorAll('input[name="drinks"]:checked'))
+        .map(cb => cb.value)
+        .join(', ') || "Не указано";
 
-  try {
-    // 🔄 Отправка на PHP-скрипт
-    const response = await fetch("send_vk.php", {
-      method: "POST",
-      body: formData,
-      headers: {
-        'Accept': 'application/json'
+      // Формируем сообщение для Telegram
+      const text = `
+      💍 <b>Новый ответ на приглашение:</b>
+      👤 Имя: ${name}
+      ✅ Присутствие: ${attendance}
+      👥 Гостей: ${guests}
+      🍽️ Аллергии: ${allergies}
+      🍷 Напитки: ${drinks}
+      `;
+
+      // 🤖 Ваши оригинальные настройки Telegram (оставил как было)
+      const BOT_TOKEN = "8247024343:AAHRkeSb_JS8zMPmKgFU-VNFhpaX9tJ7Yts";
+      const CHAT_ID = "658905866 813055593";
+      
+      try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: "HTML" })
+        });
+        
+        loading.style.display = "none";
+        success.style.display = "block";
+        form.reset();
+        setTimeout(() => { success.style.display = "none"; }, 8000);
+        
+      } catch (err) {
+        console.error("Ошибка отправки:", err);
+        loading.style.display = "none";
+        errorMsg.style.display = "block";
+        setTimeout(() => { errorMsg.style.display = "none"; }, 6000);
       }
     });
-    
-    const result = await response.json();
-    loading.style.display = "none";
-    
-    if (result.success) {
-      success.style.display = "block";
-      form.reset();
-      setTimeout(() => { success.style.display = "none"; }, 8000);
-    } else {
-      throw new Error(result.error || 'Ошибка при отправке');
-    }
-    
-  } catch (err) {
-    console.error("Ошибка отправки:", err);
-    loading.style.display = "none";
-    errorMsg.textContent = err.message || "Произошла ошибка. Попробуйте позже";
-    errorMsg.style.display = "block";
-    setTimeout(() => { errorMsg.style.display = "none"; }, 6000);
-  }
-});
     // ===== АНИМАЦИЯ ПРИ СКРОЛЛЕ =====
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
