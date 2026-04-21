@@ -1426,137 +1426,136 @@
   </footer>
 
   <script>
-    // ===== ОБРАТНЫЙ ОТСЧЁТ =====
-    function updateCountdown() {
-      const weddingDate = new Date('2026-09-11T15:30:00+03:00').getTime();
-      const now = new Date().getTime();
-      const timeLeft = weddingDate - now;
-      if (timeLeft > 0) {
-        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-        const isMobile = window.innerWidth <= 768;
-        document.getElementById('days').textContent = isMobile ? days.toString().padStart(2, '0') : days.toString().padStart(3, '0');
-        document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
-        document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
-        document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
-      } else {
-        document.querySelector('.countdown-numbers').innerHTML = '<div style="font-size: 1.5em; padding: 20px; color: var(--graphite);">Свадьба состоялась! Спасибо, что были с нами! ✨</div>';
-      }
+  // ===== ОБРАТНЫЙ ОТСЧЁТ =====
+  function updateCountdown() {
+    const weddingDate = new Date('2026-09-11T15:30:00+03:00').getTime();
+    const now = new Date().getTime();
+    const timeLeft = weddingDate - now;
+    if (timeLeft > 0) {
+      const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+      const isMobile = window.innerWidth <= 768;
+      document.getElementById('days').textContent = isMobile ? days.toString().padStart(2, '0') : days.toString().padStart(3, '0');
+      document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+      document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+      document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+    } else {
+      document.querySelector('.countdown-numbers').innerHTML = '<div style="font-size: 1.5em; padding: 20px; color: var(--graphite);">Свадьба состоялась! Спасибо, что были с нами! ✨</div>';
     }
-    setInterval(updateCountdown, 1000);
-    updateCountdown();
-    window.addEventListener('resize', updateCountdown);
+  }
+  setInterval(updateCountdown, 1000);
+  updateCountdown();
+  window.addEventListener('resize', updateCountdown);
 
-    // ===== ФОРМА RSVP: Валидация и отправка =====
-    const form = document.getElementById("rsvpForm");
-    const loading = document.getElementById("loadingStatus");
-    const success = document.getElementById("successStatus");
-    const errorMsg = document.getElementById("errorStatus");
+  // ===== ФОРМА RSVP =====
+  const form = document.getElementById("rsvpForm");
+  const loading = document.getElementById("loadingStatus");
+  const success = document.getElementById("successStatus");
+  const errorMsg = document.getElementById("errorStatus");
 
-    // Функция очистки ошибок
-    function clearErrors() {
-      document.querySelectorAll('.form-group.error').forEach(el => el.classList.remove('error'));
-      document.querySelectorAll('.form-input.error, .form-textarea.error').forEach(el => el.classList.remove('error'));
+  function clearErrors() {
+    document.querySelectorAll('.form-group.error').forEach(el => el.classList.remove('error'));
+    document.querySelectorAll('.form-input.error, .form-textarea.error').forEach(el => el.classList.remove('error'));
+  }
+
+  function showError(fieldId) {
+    const group = document.getElementById(fieldId)?.closest('.form-group');
+    const input = document.getElementById(fieldId);
+    if (group) group.classList.add('error');
+    if (input) input.classList.add('error');
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault(); // ⚠️ Обязательно предотвращаем перезагрузку
+    clearErrors();
+    
+    let isValid = true;
+
+    // Валидация имени
+    const name = form.name.value.trim();
+    const namePattern = /^[\sа-яА-ЯёЁa-zA-Z\-']{2,50}$/;
+    if (!name || !namePattern.test(name)) {
+      showError('name');
+      isValid = false;
     }
 
-    // Функция показа ошибки
-    function showError(fieldId) {
-      const group = document.getElementById(fieldId).closest('.form-group');
-      const input = document.getElementById(fieldId);
-      if (group) group.classList.add('error');
-      if (input) input.classList.add('error');
+    // Валидация присутствия
+    const attendance = form.attendance.value;
+    if (!attendance) {
+      const attendanceGroup = document.querySelector('input[name="attendance"]')?.closest('.form-group');
+      if (attendanceGroup) attendanceGroup.classList.add('error');
+      isValid = false;
     }
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      clearErrors();
-      
-      let isValid = true;
+    if (!isValid) {
+      const firstError = document.querySelector('.form-group.error');
+      if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
 
-      // 1. Валидация имени
-      const name = form.name.value.trim();
-      const namePattern = /^[\sа-яА-ЯёЁa-zA-Z\-']{2,50}$/;
-      if (!name || !namePattern.test(name)) {
-        showError('name');
-        isValid = false;
-      }
+    // Показываем загрузку
+    loading.style.display = "block";
+    success.style.display = "none";
+    errorMsg.style.display = "none";
 
-      // 2. Валидация присутствия
-      const attendance = form.attendance.value;
-      if (!attendance) {
-        const attendanceGroup = document.querySelector('input[name="attendance"]').closest('.form-group');
-        if (attendanceGroup) attendanceGroup.classList.add('error');
-        isValid = false;
-      }
+    // Собираем данные
+    const guests = form.guests.value || "1";
+    const allergies = form.allergies.value.trim() || "Нет";
+    const drinks = Array.from(document.querySelectorAll('input[name="drinks"]:checked'))
+      .map(cb => cb.value)
+      .join(', ') || "Не указано";
 
-      // 3. Если не валидно — выходим
-      if (!isValid) {
-        const firstError = document.querySelector('.form-group.error');
-        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-
-      // ✅ Всё валидно — показываем загрузку
-      loading.style.display = "block";
-      success.style.display = "none";
-      errorMsg.style.display = "none";
-
-      // Собираем данные
-      const guests = form.guests.value || "1";
-      const allergies = form.allergies.value.trim() || "Нет";
-      
-      // 🍷 Собираем выбранные напитки
-      const drinks = Array.from(document.querySelectorAll('input[name="drinks"]:checked'))
-        .map(cb => cb.value)
-        .join(', ') || "Не указано";
-
-      // Формируем сообщение для Telegram
-      const text = `
-      💍 <b>Новый ответ на приглашение:</b>
-      👤 Имя: ${name}
-      ✅ Присутствие: ${attendance}
-      👥 Гостей: ${guests}
-      🍽️ Аллергии: ${allergies}
-      🍷 Напитки: ${drinks}
-      `;
-
-      // 🤖 Ваши оригинальные настройки Telegram (оставил как было)
-      const BOT_TOKEN = "8247024343:AAHRkeSb_JS8zMPmKgFU-VNFhpaX9tJ7Yts";
-      const CHAT_ID = "658905866";
-      
-      await fetch('https://script.google.com/macros/s/AKfycbw7Pb7z6niZnsf5G7E5NAoieliTj2JlWYtp5osUHE3YHhsynPDsS6OL2brTzQ1DZa_q/exec', {
+    // 📤 Отправка в Google Apps Script (исправленный формат!)
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxipVjvIOPJkudjk03HKkBc3AScDY2rxczrlDAXQHbZ_8R13Rtu4slmzSo7O59oG4ZP/exec';
+    
+    try {
+      // Вариант 1: Отправка как text/plain (самый надёжный для no-cors)
+      await fetch(scriptURL, {
         method: 'POST',
-        mode: 'no-cors', // важно для Google Scripts!
-        headers: { 'Content-Type': 'application/json' },
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({
           name: name,
           attendance: attendance,
           guests: guests,
           allergies: allergies,
-          drinks: drinks
+          drinks: drinks,
+          timestamp: new Date().toISOString()
         })
       });
-      // Показать успех (так как no-cors не даёт прочитать ответ)
+
+      // Поскольку no-cors не даёт прочитать ответ, считаем успешным, если нет ошибки сети
       loading.style.display = "none";
       success.style.display = "block";
       form.reset();
+      
+      // Скрыть сообщение об успехе через 5 секунд
+      setTimeout(() => { success.style.display = "none"; }, 5000);
+      
+    } catch (err) {
+      console.error("Ошибка отправки:", err);
+      loading.style.display = "none";
+      errorMsg.style.display = "block";
+      setTimeout(() => { errorMsg.style.display = "none"; }, 6000);
+    }
+  });
 
-    // ===== АНИМАЦИЯ ПРИ СКРОЛЛЕ =====
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1 });
-    
-    document.querySelectorAll('.section-title, .calendar-container, .location-card, .timeline-item, .detail-item, .countdown-item').forEach(el => {
-      el.classList.add('fade-in');
-      observer.observe(el);
+  // ===== АНИМАЦИЯ ПРИ СКРОЛЛЕ (вынесено ЗА пределы формы!) =====
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
     });
-  </script>
+  }, { threshold: 0.1 });
+  
+  document.querySelectorAll('.section-title, .calendar-container, .location-card, .timeline-item, .detail-item, .countdown-item').forEach(el => {
+    el.classList.add('fade-in');
+    observer.observe(el);
+  });
+</script>
 </body>
 </html>
